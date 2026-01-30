@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from .common import require_credential, decrypt_fernet, UY_TZ, normalize_currency
+from .common import (
+    require_credential, 
+    decrypt_fernet, 
+    normalize_currency,
+    parse_amount,
+    now_iso,
+)
 
 # --- Configuración y Selectores ---
 BANK_KEY = "oca"
@@ -73,26 +79,6 @@ def _get_creds() -> OcaCreds:
     return OcaCreds(document=doc, password=pwd)
 
 
-def _parse_money(raw: str) -> dict[str, Any]:
-    """
-    Parsea importes como "$ 5,40", "US$ 1.234,56".
-    """
-    s = (raw or "").strip()
-    if not s:
-        return {"raw": raw, "number": None}
-
-    # Remover símbolos de moneda y espacios
-    clean = s.replace("$", "").replace("US", "").strip()
-    # Formato español: punto miles, coma decimal
-    # 1.234,56 -> 1234.56
-    normalized = clean.replace(".", "").replace(",", ".")
-    
-    try:
-        val = float(normalized)
-    except ValueError:
-        val = None
-
-    return {"raw": raw, "number": val}
 
 
 def login(driver: WebDriver, wait: WebDriverWait, creds: OcaCreds) -> None:
@@ -130,9 +116,7 @@ def login(driver: WebDriver, wait: WebDriverWait, creds: OcaCreds) -> None:
 def clean_raw_money(raw_val: str) -> str:
     """Limpia strings de dinero usando Regex para dejar solo el importe."""
     if not raw_val: return raw_val
-    import re
     # Busca patrón: (US$|$)? + espacios + digitos/puntos/comas
-    # Ej: "Disponible\n$ 5.000" -> "$ 5.000"
     match = re.search(r"(?:US\$|\$)\s*[\d.,]+", raw_val)
     if match:
         return match.group(0).strip()
@@ -165,7 +149,7 @@ def extract_blue(driver: WebDriver) -> list[dict]:
             balance_raw = clean_raw_money(balance_dirty)
 
             currency = "USD" if "Dólares" in currency_lbl else "UYU"
-            saldo = _parse_money(balance_raw)
+            saldo = parse_amount(balance_raw)
 
             accounts.append({
                 "type": "ACCOUNT",
@@ -220,7 +204,7 @@ def extract_credit_cards(driver: WebDriver, wait: WebDriverWait) -> list[dict]:
             avail_raw_dirty = _safe_text(avail_elem)
             avail_raw = clean_raw_money(avail_raw_dirty)
             
-            avail_parsed = _parse_money(avail_raw)
+            avail_parsed = parse_amount(avail_raw)
             avail_currency = "USD" if "US" in avail_raw else "UYU"
             
         except Exception:
@@ -235,7 +219,7 @@ def extract_credit_cards(driver: WebDriver, wait: WebDriverWait) -> list[dict]:
 
         for raw_cons in item['consumos_raw']:
             clean_cons = clean_raw_money(raw_cons)
-            cons_parsed = _parse_money(clean_cons)
+            cons_parsed = parse_amount(clean_cons)
             
             currency = "USD" if "US" in clean_cons else "UYU"
             
@@ -253,7 +237,6 @@ def extract_credit_cards(driver: WebDriver, wait: WebDriverWait) -> list[dict]:
             acc_num_clean = item['name']
             if "****" in acc_num_clean:
                 try:
-                    import re
                     match_num = re.search(r"OCA.*?(\d{4})", acc_num_clean)
                     if match_num:
                         acc_num_clean = f"{match_num.group(1)}"
@@ -282,6 +265,6 @@ def run(driver: WebDriver, env: dict[str, str]) -> dict:
     data_cred = extract_credit_cards(driver, wait)
 
     return {
-        "updated_at": datetime.now(UY_TZ).isoformat(timespec="seconds"),
+        "updated_at": now_iso(),
         "accounts": data_blue + data_cred,
     }

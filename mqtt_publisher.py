@@ -2,27 +2,11 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
 import paho.mqtt.client as mqtt
 
-logger = logging.getLogger(__name__)
+from banks.common import normalize_currency
 
-def _normalize_currency(currency: str) -> str:
-    """
-    Normaliza símbolos de moneda a códigos estándar para usar en IDs.
-    Ej: '$' -> 'uyu', 'U$S' -> 'usd', 'US$' -> 'usd'
-    """
-    currency = currency.strip().upper()
-    mapping = {
-        "$": "uyu",
-        "UYU": "uyu",
-        "U$S": "usd",
-        "US$": "usd",
-        "USD": "usd",
-        "€": "eur",
-        "EUR": "eur",
-    }
-    return mapping.get(currency, currency.lower())
+logger = logging.getLogger(__name__)
 
 def _remove_consecutive_duplicates(text: str, separator: str = "_") -> str:
     """
@@ -81,14 +65,19 @@ def publish_to_mqtt(data):
         )
 
         for bank_name, bank_data in data.get("banks", {}).items():
+            # Obtener updated_at del banco o del JSON global
+            bank_updated_at = None
+            if isinstance(bank_data, dict):
+                bank_updated_at = bank_data.get("updated_at") or data.get("updated_at")
+            
             # Siempre publicamos el estado del banco
-            _publish_bank_status(client, bank_name, bank_data)
+            _publish_bank_status(client, bank_name, bank_data, bank_updated_at)
             
             # Si es un diccionario y no tiene error, publicamos las cuentas
             if isinstance(bank_data, dict) and "error" not in bank_data:
                 accounts = bank_data.get("accounts", [])
                 for idx, account in enumerate(accounts):
-                    _publish_account(client, bank_name, account, idx)
+                    _publish_account(client, bank_name, account, idx, bank_updated_at)
             elif isinstance(bank_data, dict) and "error" in bank_data:
                 logger.warning(f"Banco {bank_name} reportó error: {bank_data['error']}. Publicando solo estado.")
 
@@ -101,7 +90,7 @@ def publish_to_mqtt(data):
     except Exception as e:
         logger.error(f"Error publicando en MQTT: {e}")
 
-def _publish_bank_status(client, bank_name, bank_data):
+def _publish_bank_status(client, bank_name, bank_data, updated_at=None):
     """Publica el estado general del banco (OK o Error) como un binary_sensor de problema."""
     prefix = os.getenv("MQTT_TOPIC_PREFIX", "banks").strip()
     safe_bank_id = f"{bank_name}_status".lower().replace(" ", "_")
@@ -132,14 +121,14 @@ def _publish_bank_status(client, bank_name, bank_data):
     attributes = {
         "error": bank_data.get("error") if is_error else None,
         "updated_at": bank_data.get("updated_at") if isinstance(bank_data, dict) else None,
-        "last_updated": datetime.now().isoformat()
+        "last_updated": updated_at or bank_data.get("updated_at")
     }
     client.publish(f"{base_topic}/attributes", json.dumps(attributes), retain=True, qos=1)
 
-def _publish_account(client, bank_name, account, idx):
+def _publish_account(client, bank_name, account, idx, updated_at=None):
     """Publica una cuenta individual con autodiscovery."""
     account_num = account.get("account_number", f"account_{idx}")
-    currency = _normalize_currency(account.get("currency", ""))
+    currency = normalize_currency(account.get("currency", ""), output_format="code")
     
     # Construir ID base: bank_account_currency
     raw_id = f"{bank_name}_{account_num}_{currency}".lower()
@@ -180,5 +169,5 @@ def _publish_account(client, bank_name, account, idx):
     client.publish(f"{base_topic}/state", str(state_value), retain=True, qos=1)
     
     # Publicar todos los datos del JSON como atributos (incluyendo logos, etc.)
-    attributes = {**account, "bank": bank_name, "last_updated": datetime.now().isoformat()}
+    attributes = {**account, "bank": bank_name, "last_updated": updated_at}
     client.publish(f"{base_topic}/attributes", json.dumps(attributes), retain=True, qos=1)

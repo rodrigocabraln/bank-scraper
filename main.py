@@ -3,7 +3,6 @@ import os
 import importlib
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +11,9 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service as FirefoxService
 
+from config import OUTPUT_JSON
+from banks.common import now_iso
+
 # Configuración de Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -19,8 +21,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger(__name__)
-
-UY_TZ = timezone(timedelta(hours=-3))
 
 
 @dataclass(frozen=True)
@@ -37,9 +37,7 @@ class RunConfig:
     mqtt_pass: str = ""
 
 
-def now_iso_uy() -> str:
-    """Retorna la fecha y hora actual en formato ISO para la zona horaria de Uruguay."""
-    return datetime.now(UY_TZ).isoformat(timespec="seconds")
+
 
 
 def load_config() -> RunConfig:
@@ -53,7 +51,6 @@ def load_config() -> RunConfig:
         raise SystemExit("Error: Configura BANKS en .env (ej: BROU_PERSONAS)")
 
     headless = os.getenv("HEADLESS", "1").strip() == "1"
-    output_json = "/app/data/accounts.json"
     
     # Flag para habilitar/deshabilitar logs de geckodriver (default: 0/desactivado para Docker)
     gecko_logs = os.getenv("GECKODRIVER_LOGS", "0").strip() == "1"
@@ -69,7 +66,7 @@ def load_config() -> RunConfig:
     return RunConfig(
         banks=banks,
         headless=headless,
-        output_json=output_json,
+        output_json=OUTPUT_JSON,
         gecko_logs=gecko_logs,
         mqtt_enabled=mqtt_enabled,
         mqtt_topic_prefix=mqtt_topic_prefix,
@@ -167,7 +164,7 @@ def main() -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     final_result: dict = {
-        "updated_at": now_iso_uy(),
+        "updated_at": now_iso(),
         "banks": {}
     }
 

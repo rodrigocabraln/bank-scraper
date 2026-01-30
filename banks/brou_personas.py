@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
-from typing import Any
 
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from .common import require_credential, decrypt_fernet, normalize_currency
+from .common import (
+    require_credential, 
+    decrypt_fernet, 
+    normalize_currency,
+    parse_amount,
+    now_iso,
+)
 
 # --- Configuración y Selectores ---
 BANK_KEY = "brou_personas"
@@ -23,7 +27,6 @@ CREDENTIAL_FIELDS = [
 ]
 
 BROU_URL = "https://ebanking.brou.com.uy/frontend/"
-UY_TZ = timezone(timedelta(hours=-3))
 
 # Selectores
 SEL_DOC_INPUT = (By.NAME, "document")
@@ -63,17 +66,6 @@ def _get_creds() -> BrouCreds:
     return BrouCreds(document=doc, password=pwd)
 
 
-def _normalize_amount(raw: str) -> dict[str, Any]:
-    """Convierte el formato de moneda uruguayo (1.234,56) a un float numérico."""
-    s = (raw or "").strip()
-    if not s:
-        return {"raw": raw, "number": None}
-    try:
-        # Reemplaza separador de miles y cambia coma decimal por punto
-        normalized = s.replace(".", "").replace(",", ".")
-        return {"raw": raw, "number": float(normalized)}
-    except Exception:
-        return {"raw": raw, "number": None}
 
 
 def login(driver: WebDriver, wait: WebDriverWait, creds: BrouCreds) -> None:
@@ -115,7 +107,7 @@ def extract_accounts(wait: WebDriverWait) -> list[dict]:
         # BROU accounts are typically standard accounts/savings
         # The scraped saldo is the available balance.
         
-        balance_obj = _normalize_amount(saldo_text)
+        balance_obj = parse_amount(saldo_text)
         
         accounts.append({
             "type": "ACCOUNT",
@@ -141,6 +133,6 @@ def run(driver: WebDriver, env: dict[str, str]) -> dict:
     accounts = extract_accounts(wait)
 
     return {
-        "updated_at": datetime.now(UY_TZ).isoformat(timespec="seconds"),
+        "updated_at": now_iso(),
         "accounts": accounts,
     }

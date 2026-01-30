@@ -1,0 +1,23 @@
+services:
+  bank-scraper:
+    build: .
+    container_name: bank-scraper
+    restart: unless-stopped
+    shm_size: 2gb
+    ports:
+      - "${HTTP_PORT:-8000}:${HTTP_PORT:-8000}"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - BANKS=${BANKS}
+      - CREDS_KEY=${CREDS_KEY}
+      - SCHEDULE_HOURS=${SCHEDULE_HOURS:-07:00,20:00}
+      - RANDOM_DELAY_MIN=${RANDOM_DELAY_MIN:-30}
+      - CREDENTIALS_DIRECTORY=${CREDENTIALS_DIRECTORY}
+      - HTTP_PORT=${HTTP_PORT:-8000}
+      - HTTP_HOST=${HTTP_HOST:-localhost}
+      - ALLOWED_IPS=${ALLOWED_IPS}
+      - OUTPUT_JSON=${OUTPUT_JSON}
+      - HEADLESS=true
+      - TZ=America/Montevideo

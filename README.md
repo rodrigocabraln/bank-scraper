@@ -133,13 +133,26 @@ MQTT_USER=tu_usuario_mqtt
 MQTT_PASS=tu_password_mqtt
 ```
 
-### Paso 3: Entidades Creadas
+### Paso 3: Copiar Logos a Home Assistant
+Los logos de los bancos deben copiarse a la carpeta `www` de HA para que funcionen desde cualquier red:
+
+```bash
+# En tu servidor de Home Assistant
+mkdir -p /config/www/bank-logos
+
+# Copiar los logos (desde el repo clonado o el container)
+cp bank-logos/*.webp /config/www/bank-logos/
+```
+
+Los logos quedarán accesibles en HA como `/local/bank-logos/xxx.webp`.
+
+### Paso 4: Entidades Creadas
 Una vez que el scraper corra, verás por cada banco:
 - **Dispositivo** con el nombre del banco (ej: "Brou Personas", "Oca")
 - **Sensores** para cada cuenta con el saldo como estado
 - **Binary Sensor** de estado (problema/ok) por banco
 
-### Paso 4: Visualización Avanzada (Lovelace)
+### Paso 5: Visualización Avanzada (Lovelace)
 
 Para una visualización mejorada: (disponible en HACS)
 - [lovelace-auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
@@ -185,7 +198,7 @@ cards:
           {% set avail_raw = attrs.available_raw | default('---') %}
           
           {% set status_color = "#f44336" if avail_num < 1000 else "#4caf50" %}
-          {% set logo_url = attrs.logo | default('/local/icons/bank_default.png') %}
+          {% set logo_url = attrs.logo | default('/local/bank-logos/brou.webp') %}
 
           {# --- 4. CONFIGURACIÓN DE GRILLA --- #}
           {% if is_cc %}

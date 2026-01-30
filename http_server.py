@@ -9,8 +9,8 @@ from config import OUTPUT_JSON
 
 logger = logging.getLogger(__name__)
 
-# Directorio de logos (relativo al script)
-LOGOS_DIR = Path(__file__).parent / "banks" / "logos"
+# Directorio de logos (en la raíz del proyecto)
+LOGOS_DIR = Path(__file__).parent / "bank-logos"
 
 
 class JSONRequestHandler(http.server.SimpleHTTPRequestHandler):

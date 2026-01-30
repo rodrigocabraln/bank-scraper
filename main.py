@@ -126,24 +126,22 @@ def run_bank_scraper(bank_module: str, cfg: RunConfig) -> dict:
         # Ejecución del scraper
         bank_data = mod.run(driver=driver, env=os.environ)
         
-        # Obtener host/puerto para URLs
-        http_host = os.getenv("HTTP_HOST", "localhost")
-        http_port = os.getenv("HTTP_PORT", "8000")
-        base_url = f"http://{http_host}:{http_port}"
+        # Ruta base para logos en Home Assistant (carpeta www/bank-logos)
+        logo_base = "/local/bank-logos"
 
-        # 1. Agregar URL completa del logo a nivel de banco (como fallback)
+        # 1. Agregar ruta del logo a nivel de banco (como fallback)
         bank_logo = getattr(mod, "BANK_LOGO", None)
         if bank_logo:
-            bank_data["logo"] = f"{base_url}/logos/{bank_logo}"
+            bank_data["logo"] = f"{logo_base}/{bank_logo}"
         
-        # 2. Agregar URL completa a cada cuenta
+        # 2. Agregar ruta del logo a cada cuenta
         if "accounts" in bank_data and isinstance(bank_data["accounts"], list):
             for acc in bank_data["accounts"]:
                 # Si la cuenta ya trae su propio logo (ej. ocablue.webp), lo usamos
                 # Si no, usamos el logo por defecto del banco
                 acc_logo = acc.get("logo") or bank_logo
                 if acc_logo:
-                    acc["logo"] = f"{base_url}/logos/{acc_logo}"
+                    acc["logo"] = f"{logo_base}/{acc_logo}"
         
         logger.info(f"Éxito: {bank_module} procesado correctamente")
         return bank_data

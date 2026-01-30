@@ -2,3 +2,4 @@ python-dotenv
 selenium
 schedule
 cryptography
+paho-mqtt

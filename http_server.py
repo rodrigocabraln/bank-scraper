@@ -40,7 +40,7 @@ class JSONRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             # 4. Servir el JSON
-            output_path = os.getenv("OUTPUT_JSON", "./data/accounts.json")
+            output_path = "/app/data/accounts.json"
             if not os.path.exists(output_path):
                 self.send_error(404, "File not found yet")
                 return

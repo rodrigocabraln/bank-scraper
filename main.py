@@ -29,6 +29,12 @@ class RunConfig:
     headless: bool
     output_json: str
     gecko_logs: bool
+    mqtt_enabled: bool = False
+    mqtt_topic_prefix: str = "banks"
+    mqtt_broker: str = ""
+    mqtt_port: int = 1883
+    mqtt_user: str = ""
+    mqtt_pass: str = ""
 
 
 def now_iso_uy() -> str:
@@ -47,18 +53,30 @@ def load_config() -> RunConfig:
         raise SystemExit("Error: Configura BANKS en .env (ej: BROU_PERSONAS)")
 
     headless = os.getenv("HEADLESS", "1").strip() == "1"
-    output_json = os.getenv("OUTPUT_JSON", "./data/accounts.json").strip()
+    output_json = "/app/data/accounts.json"
+    
     # Flag para habilitar/deshabilitar logs de geckodriver (default: 0/desactivado para Docker)
     gecko_logs = os.getenv("GECKODRIVER_LOGS", "0").strip() == "1"
 
-    # Ejemplo de placeholder en log si fuera necesario loguear algo sensible:
-    # logger.debug("Cargando configuración para usuario <USER>")
+    # Configuración MQTT
+    mqtt_enabled = os.getenv("MQTT_ENABLED", "false").lower() == "true"
+    mqtt_topic_prefix = os.getenv("MQTT_TOPIC_PREFIX", "banks").strip()
+    mqtt_broker = os.getenv("MQTT_BROKER", "").strip()
+    mqtt_port = int(os.getenv("MQTT_PORT", "1883").strip())
+    mqtt_user = os.getenv("MQTT_USER", "").strip()
+    mqtt_pass = os.getenv("MQTT_PASS", "").strip()
 
     return RunConfig(
         banks=banks,
         headless=headless,
         output_json=output_json,
-        gecko_logs=gecko_logs
+        gecko_logs=gecko_logs,
+        mqtt_enabled=mqtt_enabled,
+        mqtt_topic_prefix=mqtt_topic_prefix,
+        mqtt_broker=mqtt_broker,
+        mqtt_port=mqtt_port,
+        mqtt_user=mqtt_user,
+        mqtt_pass=mqtt_pass
     )
 
 

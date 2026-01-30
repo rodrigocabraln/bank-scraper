@@ -18,6 +18,11 @@ services:
       - HTTP_PORT=${HTTP_PORT:-8000}
       - HTTP_HOST=${HTTP_HOST:-localhost}
       - ALLOWED_IPS=${ALLOWED_IPS}
-      - OUTPUT_JSON=${OUTPUT_JSON}
       - HEADLESS=true
       - TZ=America/Montevideo
+      - MQTT_ENABLED=${MQTT_ENABLED:-false}
+      - MQTT_TOPIC_PREFIX=${MQTT_TOPIC_PREFIX:-banks}
+      - MQTT_BROKER=${MQTT_BROKER}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}

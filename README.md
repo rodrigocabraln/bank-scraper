@@ -180,11 +180,9 @@ cards:
           {# --- 3. LÓGICA DE SALDOS Y TIPO --- #}
           {% set is_cc = attrs.type == 'CREDIT_CARD' %}
           
-          {% set bal_obj = attrs.balance if attrs.balance is defined else none %}
-          {% set avail_obj = attrs.available if attrs.available is defined else bal_obj %}
-          
-          {% set avail_num = avail_obj.number if avail_obj and avail_obj.number is not none else 0 %}
-          {% set avail_raw = avail_obj.raw if avail_obj and avail_obj.raw else "---" %}
+          {# Atributos planos: balance_raw, balance_number, available_raw, available_number #}
+          {% set avail_num = attrs.available_number | default(0) %}
+          {% set avail_raw = attrs.available_raw | default('---') %}
           
           {% set status_color = "#f44336" if avail_num < 1000 else "#4caf50" %}
           {% set logo_url = attrs.logo | default('/local/icons/bank_default.png') %}
@@ -193,7 +191,7 @@ cards:
           {% if is_cc %}
             {% set grid_areas = '"i n bal avail" "i l bal avail"' %}
             {% set grid_cols = "45px 1fr 80px 80px" %}
-            {% set bal_raw = bal_obj.raw if bal_obj and bal_obj.raw else "0" %}
+            {% set bal_raw = attrs.balance_raw | default('0') %}
             {% set bal_html = "<span>Movimientos:</span><br>" ~ bal_raw %}
           {% else %}
             {% set grid_areas = '"i n avail" "i l avail"' %}

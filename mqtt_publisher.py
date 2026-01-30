@@ -23,6 +23,33 @@ def _remove_consecutive_duplicates(text: str, separator: str = "_") -> str:
             result.append(part)
     return separator.join(result)
 
+
+def _flatten_for_mqtt(account: dict) -> dict:
+    """
+    Aplana un objeto de cuenta para MQTT/Home Assistant.
+    Los atributos JSON de HA no soportan bien objetos anidados,
+    así que convertimos balance/available a campos planos.
+    
+    Ej: {"balance": {"raw": "$5", "number": 5}} 
+        -> {"balance_raw": "$5", "balance_number": 5}
+    """
+    result = {}
+    for key, value in account.items():
+        if isinstance(value, dict) and key in ("balance", "available"):
+            # Aplanar objetos anidados: balance -> balance_raw, balance_number
+            for subkey, subvalue in value.items():
+                flat_key = f"{key}_{subkey}"
+                # Convertir null a defaults
+                if subvalue is None:
+                    result[flat_key] = "---" if subkey == "raw" else 0
+                else:
+                    result[flat_key] = subvalue
+        elif value is None:
+            result[key] = "---"
+        else:
+            result[key] = value
+    return result
+
 def publish_to_mqtt(data):
     """
     Publica la data del scraper a MQTT con Home Assistant Discovery.
@@ -169,5 +196,7 @@ def _publish_account(client, bank_name, account, idx, updated_at=None):
     client.publish(f"{base_topic}/state", str(state_value), retain=True, qos=1)
     
     # Publicar todos los datos del JSON como atributos (incluyendo logos, etc.)
-    attributes = {**account, "bank": bank_name, "last_updated": updated_at}
+    # Aplanar objetos anidados para compatibilidad con HA
+    flattened_account = _flatten_for_mqtt(account)
+    attributes = {**flattened_account, "bank": bank_name, "last_updated": updated_at}
     client.publish(f"{base_topic}/attributes", json.dumps(attributes), retain=True, qos=1)

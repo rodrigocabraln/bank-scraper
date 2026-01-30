@@ -10,19 +10,25 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
+      # Configuración Principal
       - BANKS=${BANKS}
       - CREDS_KEY=${CREDS_KEY}
+      - HEADLESS=true
+      - TZ=${TZ:-America/Montevideo}
+      # Scheduler
       - SCHEDULE_HOURS=${SCHEDULE_HOURS:-07:00,20:00}
       - RANDOM_DELAY_MIN=${RANDOM_DELAY_MIN:-30}
-      - CREDENTIALS_DIRECTORY=${CREDENTIALS_DIRECTORY}
-      - HTTP_PORT=${HTTP_PORT:-8000}
-      - HTTP_HOST=${HTTP_HOST:-localhost}
-      - ALLOWED_IPS=${ALLOWED_IPS}
-      - HEADLESS=true
-      - TZ=America/Montevideo
+      # MQTT
       - MQTT_ENABLED=${MQTT_ENABLED:-false}
-      - MQTT_TOPIC_PREFIX=${MQTT_TOPIC_PREFIX:-banks}
       - MQTT_BROKER=${MQTT_BROKER}
       - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USER=${MQTT_USER}
       - MQTT_PASS=${MQTT_PASS}
+      - MQTT_TOPIC_PREFIX=${MQTT_TOPIC_PREFIX:-banks}
+      # HTTP Server
+      - HTTP_PORT=${HTTP_PORT:-8000}
+      - HTTP_HOST=${HTTP_HOST:-localhost}
+      - ALLOWED_IPS=${ALLOWED_IPS}
+      # Avanzado
+      - CREDENTIALS_DIRECTORY=${CREDENTIALS_DIRECTORY:-/dev/shm/creds}
+      - GECKODRIVER_LOGS=${GECKODRIVER_LOGS:-0}

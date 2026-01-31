@@ -1,0 +1,34 @@
+services:
+  bank-scraper:
+    build: .
+    container_name: bank-scraper
+    restart: unless-stopped
+    shm_size: 2gb
+    ports:
+      - "${HTTP_PORT:-8000}:${HTTP_PORT:-8000}"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      # Configuración Principal
+      - BANKS=${BANKS}
+      - CREDS_KEY=${CREDS_KEY}
+      - HEADLESS=true
+      - TZ=${TZ:-America/Montevideo}
+      # Scheduler
+      - SCHEDULE_HOURS=${SCHEDULE_HOURS:-07:00,20:00}
+      - RANDOM_DELAY_MIN=${RANDOM_DELAY_MIN:-30}
+      # MQTT
+      - MQTT_ENABLED=${MQTT_ENABLED:-false}
+      - MQTT_BROKER=${MQTT_BROKER}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
+      - MQTT_TOPIC_PREFIX=${MQTT_TOPIC_PREFIX:-banks}
+      # HTTP Server
+      - HTTP_PORT=${HTTP_PORT:-8000}
+      - ALLOWED_IPS=${ALLOWED_IPS}
+      # Avanzado
+      # CREDENTIALS_DIRECTORY: /dev/shm/creds (RAM, se borran) o /app/data/creds (persistente)
+      - CREDENTIALS_DIRECTORY=${CREDENTIALS_DIRECTORY:-/dev/shm/creds}
+      - GECKODRIVER_LOGS=${GECKODRIVER_LOGS:-0}

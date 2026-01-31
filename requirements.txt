@@ -1,0 +1,5 @@
+python-dotenv==1.2.1
+selenium==4.40.0
+schedule==1.2.2
+cryptography==46.0.4
+paho-mqtt==2.1.0

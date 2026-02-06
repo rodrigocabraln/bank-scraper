@@ -92,10 +92,6 @@ def run_scraper() -> None:
     try:
         subprocess.run([sys.executable, "main.py"], check=True)
         
-        # Publicar a MQTT si está habilitado
-        if MQTT_ENABLED:
-            publish_mqtt_task()
-
         # Guardar timestamp de última ejecución exitosa
         os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
         with open(STATE_FILE, "w") as f:

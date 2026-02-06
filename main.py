@@ -32,6 +32,7 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 
 from config import OUTPUT_JSON
 from banks.common import now_iso
+from mqtt_publisher import publish_to_mqtt
 
 
 # =============================================================================
@@ -281,6 +282,12 @@ def main() -> None:
             encoding="utf-8"
         )
         logger.info(f"Proceso finalizado. Resultado guardado en: {out_path}")
+
+        # Publicar a MQTT si está habilitado
+        if cfg.mqtt_enabled:
+            logger.info("Iniciando publicación MQTT...")
+            publish_to_mqtt(final_result)
+            
     except Exception as e:
         logger.error(f"No se pudo escribir el archivo de salida: {e}")
 

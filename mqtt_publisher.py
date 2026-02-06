@@ -23,6 +23,7 @@ Uso:
 import json
 import logging
 import os
+import re
 import time
 import paho.mqtt.client as mqtt
 
@@ -175,8 +176,10 @@ def _publish_account(client, bank_name: str, account: dict, idx: int, updated_at
     
     # Construir ID único: bank_account_currency
     raw_id = f"{bank_name}_{account_num}_{currency}".lower()
-    # Sanitizar caracteres especiales
+    # Sanitizar: reemplazar separadores comunes por underscore, luego eliminar
+    # cualquier caracter no alfanumérico (previene $, €, #, +, / en tópicos MQTT)
     safe_id = raw_id.replace(" ", "_").replace("(", "").replace(")", "").replace("-", "_")
+    safe_id = re.sub(r'[^a-z0-9_]', '', safe_id)
     # Eliminar redundancias (ej: oca_oca_blue → oca_blue)
     safe_id = _remove_consecutive_duplicates(safe_id)
     
@@ -191,7 +194,7 @@ def _publish_account(client, bank_name: str, account: dict, idx: int, updated_at
         "json_attributes_topic": f"{base_topic}/attributes",
         "unit_of_measurement": account.get("currency", "UYU"),
         "device_class": "monetary",
-        "state_class": "measurement",
+        "state_class": "total",
         "icon": "mdi:bank",
         "device": {
             "identifiers": [f"bank_{bank_name}"],

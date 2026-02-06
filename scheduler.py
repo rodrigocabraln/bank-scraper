@@ -201,10 +201,9 @@ def main() -> None:
     # Verificar ejecuciones perdidas al iniciar
     check_missed_runs()
     
-    # Configurar republicación MQTT periódica
+    # Publicar a MQTT al iniciar (si existe el JSON previo)
     if MQTT_ENABLED:
-        schedule.every(60).seconds.do(publish_mqtt_task)
-        publish_mqtt_task()  # Publicar inmediatamente al iniciar
+        publish_mqtt_task()
     
     # Bucle principal
     while True:
